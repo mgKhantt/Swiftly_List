@@ -52,6 +52,13 @@ class ListViewModel: ObservableObject {
     func deleteAllItems() {
         items.removeAll()
     }
+    
+    func editItem(item: ItemModel, newTitle: String) {
+        if let index = items.firstIndex(where: {$0.id == item.id}) {
+            items[index].title = newTitle
+            saveItems()
+        }
+    }
 
     func moveItems(from source: IndexSet, to destination: Int, in filteredItems: [ItemModel]) {
         //finishedItems are Task 1, Task 2, and Task 4.
@@ -86,9 +93,6 @@ class ListViewModel: ObservableObject {
         items.insert(contentsOf: movingItems, at: insertIndex)
     }
 
-    
-    
-    
     func updateItem(item: ItemModel) {
         if let index = items.firstIndex(where: { $0.id == item.id }) {
             items[index] = item.updateCompletion()

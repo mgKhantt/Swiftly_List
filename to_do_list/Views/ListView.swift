@@ -1,43 +1,58 @@
-//
-//  ListView.swift
-//  to_do_list
-//
-//  Created by Khant Phone Naing  on 09/07/2025.
-//
-
 import SwiftUI
 
 struct ListView: View {
     
     @EnvironmentObject var listViewModel: ListViewModel
     
+    @State var showAlert: Bool = false
+    @State private var itemToEdit: ItemModel?
+    @State private var newTitle: String = ""
+    @State private var showEditSheet: Bool = false
+    
+    @State var showEmptyAlert: Bool = false
+    
+    
+    
     var finishedItems: [ItemModel] {
-        listViewModel.items.filter{$0.isCompleted}
+        listViewModel.items.filter { $0.isCompleted }
     }
     
     var unFinishedItems: [ItemModel] {
-        listViewModel.items.filter{!$0.isCompleted}
+        listViewModel.items.filter { !$0.isCompleted }
     }
     
     var body: some View {
         ZStack {
             Color(.systemGroupedBackground)
-                .ignoresSafeArea() // Makes the background cover the whole screen
+                .ignoresSafeArea()
             
-            VStack {
+            VStack(spacing: 12) {
+                
                 AddView()
+                
                 if listViewModel.items.isEmpty {
                     NoItemsView()
+                        .padding()
                 } else {
                     List {
                         if !finishedItems.isEmpty {
-                            Section("Finish") {
-                                ForEach(listViewModel.items.filter{$0.isCompleted}) { item in
+                            Section("Finished") {
+                                ForEach(finishedItems) { item in
                                     ListRowView(item: item)
                                         .onTapGesture {
                                             withAnimation(.linear) {
                                                 listViewModel.updateItem(item: item)
                                             }
+                                        }
+                                        .swipeActions(edge: .leading) {
+                                            Button {
+                                                itemToEdit = item
+                                                newTitle = item.title
+                                                showEditSheet = true
+                                            } label: {
+                                                Text("Edit")
+                                            }
+                                            .tint(.indigo)
                                         }
                                 }
                                 .onMove { indices, newOffset in
@@ -50,13 +65,23 @@ struct ListView: View {
                         }
                         
                         if !unFinishedItems.isEmpty {
-                            Section("UnFinish") {
-                                ForEach(listViewModel.items.filter{!$0.isCompleted}) { item in
+                            Section("Unfinished") {
+                                ForEach(unFinishedItems) { item in
                                     ListRowView(item: item)
                                         .onTapGesture {
                                             withAnimation(.linear) {
                                                 listViewModel.updateItem(item: item)
                                             }
+                                        }
+                                        .swipeActions(edge: .leading) {
+                                            Button {
+                                                itemToEdit = item
+                                                newTitle = item.title
+                                                showEditSheet = true
+                                            } label: {
+                                                Text("Edit")
+                                            }
+                                            .tint(.indigo)
                                         }
                                 }
                                 .onMove { indices, newOffset in
@@ -68,11 +93,12 @@ struct ListView: View {
                             }
                         }
                     }
-                    .scrollIndicators(.hidden)
-                    .listStyle(.insetGrouped) // Gives a modern grouped style
+                    .listStyle(.insetGrouped)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .padding(.horizontal)
                 }
+                
+                Spacer()
             }
             .frame(maxWidth: 600)
             .navigationTitle("To Do List 📝")
@@ -82,17 +108,58 @@ struct ListView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
-                        listViewModel.deleteAllItems()
+                        showAlert = true
                     } label: {
                         Text("Delete All")
-                            .foregroundStyle(.red)
+                            .foregroundColor(.red)
                     }
-                    
                 }
             }
-            .onTapGesture {
-                hideKeyboard()
+            .sheet(isPresented: $showEditSheet) {
+                NavigationView {
+                    Form {
+                        TextField("Edit Title", text: $newTitle)
+                    }
+                    .navigationTitle("Edit Item")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") {
+                                showEditSheet = false
+                            }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") {
+                                if newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    showEmptyAlert = true
+                                    return
+                                }
+                                if let item = itemToEdit {
+                                    listViewModel.editItem(item: item, newTitle: newTitle)
+                                }
+                                showEditSheet = false
+                            }
+                        }
+                        
+                    }
+                    .alert("Please fill the text field", isPresented: $showEmptyAlert) {
+                        Button("OK", role: .cancel) {}
+                    }
+                }
+                .presentationDetents([.fraction(0.3)])
+                .presentationDragIndicator(.visible)
             }
+            .alert("Do you want to delete all items?", isPresented: $showAlert) {
+                Button("Delete", role: .destructive) {
+                    listViewModel.deleteAllItems()
+                }
+                Button("Cancel", role: .cancel) {}
+            }
+            .simultaneousGesture(
+                TapGesture()
+                    .onEnded { _ in
+                        hideKeyboard()
+                    }
+            )
         }
     }
 }
