@@ -37,25 +37,14 @@ class ListViewModel: ObservableObject {
         self.items = savedItems
     }
     
-    func addItem(title: String) {
-        items.append(ItemModel(title: title, isCompleted: false))
+    func addItem(title: String, itemType: ItemType) {
+        items.append(ItemModel(title: title, isCompleted: false, itemType: itemType))
     }
     
-    func deleteItems(at offsets: IndexSet, from filteredItems: [ItemModel]) {
-        // Map filtered list indexes to actual indexes in items array
-        let idsToDelete = offsets.map { filteredItems[$0].id }
-        
-        // Remove items matching those ids from the main items array
-        items.removeAll { idsToDelete.contains($0.id) }
-    }
-
-    func deleteAllItems() {
-        items.removeAll()
-    }
-    
-    func editItem(item: ItemModel, newTitle: String) {
+    func editItem(item: ItemModel, newTitle: String, newType: ItemType) {
         if let index = items.firstIndex(where: {$0.id == item.id}) {
             items[index].title = newTitle
+            items[index].itemType = newType
             saveItems()
         }
     }
@@ -103,5 +92,17 @@ class ListViewModel: ObservableObject {
         if let encodeData = try? JSONEncoder().encode(items) {
             UserDefaults.standard.set(encodeData, forKey: itemKeys)
         }
+    }
+    
+    func deleteItems(at offsets: IndexSet, from filteredItems: [ItemModel]) {
+        // Map filtered list indexes to actual indexes in items array
+        let idsToDelete = offsets.map { filteredItems[$0].id }
+        
+        // Remove items matching those ids from the main items array
+        items.removeAll { idsToDelete.contains($0.id) }
+    }
+
+    func deleteAllItems() {
+        items.removeAll()
     }
 }

@@ -5,26 +5,24 @@ struct ListView: View {
     @EnvironmentObject var listViewModel: ListViewModel
     
     @State var showAlert: Bool = false
+    
     @State private var itemToEdit: ItemModel?
     @State private var newTitle: String = ""
     @State private var showEditSheet: Bool = false
-    @State private var showAddSheet: Bool = false
+    @State private var newItemType: ItemType = .personal
+    
+    @Binding var showAddSheet: Bool
+    
     @State var showEmptyAlert: Bool = false
     
     @State var textFieldText: String = ""
     
     
-    @State var filterOptions: [String] = [
-        "Personal", "Work", "Important"
-    ]
+    var groupedItemsByType: [ItemType: [ItemModel]] {
+        Dictionary(grouping: listViewModel.items.filter {!$0.isCompleted}){ $0.itemType }
+    }
     
-    let filterOptionIcons: [String: String] = [
-        "Personal" : "person.circle",
-        "Work" : "briefcase",
-        "Important" : "exclamationmark.triangle"
-    ]
-    
-    @State var selectedOption: String = "Personal"
+    @State var selectedOption: ItemType = .personal
     
     
     var finishedItems: [ItemModel] {
@@ -41,14 +39,6 @@ struct ListView: View {
                 .ignoresSafeArea()
             
             VStack(spacing: 12) {
-                
-                Button("Add Item") {
-                    showAddSheet = true
-                }
-                .frame(maxWidth: .infinity)
-                .buttonStyle(.borderedProminent)
-                
-                
                 if listViewModel.items.isEmpty {
                     NoItemsView()
                         .padding()
@@ -67,6 +57,7 @@ struct ListView: View {
                                             Button {
                                                 itemToEdit = item
                                                 newTitle = item.title
+                                                newItemType = item.itemType
                                                 showEditSheet = true
                                             } label: {
                                                 Text("Edit")
@@ -84,34 +75,44 @@ struct ListView: View {
                         }
                         
                         if !unFinishedItems.isEmpty {
-                            Section("Unfinished") {
-                                ForEach(unFinishedItems) { item in
-                                    ListRowView(item: item)
-                                        .onTapGesture {
-                                            withAnimation(.linear) {
-                                                listViewModel.updateItem(item: item)
-                                            }
+                            ForEach(ItemType.allCases) { type in
+                                if let items = groupedItemsByType[type], !items.isEmpty {
+                                    Section(header: HStack {
+                                        Image(systemName: type.icon)
+                                            .foregroundColor(type.iconColor)
+                                        Text(type.rawValue)
+                                    }) {
+                                        ForEach(items) { item in
+                                            ListRowView(item: item)
+                                                .onTapGesture {
+                                                    withAnimation(.linear) {
+                                                        listViewModel.updateItem(item: item)
+                                                    }
+                                                }
+                                                .swipeActions(edge: .leading) {
+                                                    Button {
+                                                        itemToEdit = item
+                                                        newTitle = item.title
+                                                        newItemType = item.itemType
+                                                        showEditSheet = true
+                                                    } label: {
+                                                        Text("Edit")
+                                                    }
+                                                    .tint(.indigo)
+                                                }
                                         }
-                                        .swipeActions(edge: .leading) {
-                                            Button {
-                                                itemToEdit = item
-                                                newTitle = item.title
-                                                showEditSheet = true
-                                            } label: {
-                                                Text("Edit")
-                                            }
-                                            .tint(.indigo)
+                                        .onMove { indices, newOffset in
+                                            listViewModel.moveItems(from: indices, to: newOffset, in: items)
                                         }
-                                }
-                                .onMove { indices, newOffset in
-                                    listViewModel.moveItems(from: indices, to: newOffset, in: unFinishedItems)
-                                }
-                                .onDelete { indexSet in
-                                    listViewModel.deleteItems(at: indexSet, from: unFinishedItems)
+                                        .onDelete { indexSet in
+                                            listViewModel.deleteItems(at: indexSet, from: items)
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
+                    .scrollIndicators(.hidden)
                     .listStyle(.insetGrouped)
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .padding(.horizontal)
@@ -141,13 +142,13 @@ struct ListView: View {
                             .textFieldStyle(.roundedBorder)
                             .submitLabel(.done)
                         Picker("Item Type", selection: $selectedOption) {
-                            ForEach(filterOptions, id: \.self) { option in
+                            ForEach(ItemType.allCases) { type in
                                 HStack {
-                                    Text("\(option)")
-                                    Image(systemName: filterOptionIcons[option] ?? "person.circl")
+                                    Image(systemName: type.icon)
+                                    Text("\(type.rawValue)")
                                 }
-                                .tint(.blue)
-                                .tag(option)
+                                .tint(type.iconColor)
+                                .tag(type)
                             }
                         }
                     }
@@ -166,7 +167,7 @@ struct ListView: View {
                                     showEmptyAlert = true
                                     return
                                 }
-                                listViewModel.addItem(title: textFieldText)
+                                listViewModel.addItem(title: textFieldText, itemType: selectedOption)
                                 showAddSheet = false
                                 textFieldText = ""
                                 hideKeyboard()
@@ -185,6 +186,18 @@ struct ListView: View {
                 NavigationView {
                     Form {
                         TextField("Edit Title", text: $newTitle)
+                            .textFieldStyle(.roundedBorder)
+                            .submitLabel(.done)
+                        Picker("Item Type", selection: $newItemType) {
+                            ForEach(ItemType.allCases) { type in
+                                HStack {
+                                    Image(systemName: type.icon)
+                                    Text("\(type.rawValue)")
+                                }
+                                .tint(type.iconColor)
+                                .tag(type)
+                            }
+                        }
                     }
                     .navigationTitle("Edit Item")
                     .toolbar {
@@ -194,15 +207,17 @@ struct ListView: View {
                             }
                         }
                         ToolbarItem(placement: .confirmationAction) {
-                            Button("Save") {
-                                if newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                                    showEmptyAlert = true
-                                    return
+                            withAnimation(.spring()) {
+                                Button("Save") {
+                                    if newTitle.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                        showEmptyAlert = true
+                                        return
+                                    }
+                                    if let item = itemToEdit {
+                                        listViewModel.editItem(item: item, newTitle: newTitle, newType: newItemType)
+                                    }
+                                    showEditSheet = false
                                 }
-                                if let item = itemToEdit {
-                                    listViewModel.editItem(item: item, newTitle: newTitle)
-                                }
-                                showEditSheet = false
                             }
                         }
                         
