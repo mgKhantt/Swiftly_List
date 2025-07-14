@@ -8,9 +8,23 @@ struct ListView: View {
     @State private var itemToEdit: ItemModel?
     @State private var newTitle: String = ""
     @State private var showEditSheet: Bool = false
-    
+    @State private var showAddSheet: Bool = false
     @State var showEmptyAlert: Bool = false
     
+    @State var textFieldText: String = ""
+    
+    
+    @State var filterOptions: [String] = [
+        "Personal", "Work", "Important"
+    ]
+    
+    let filterOptionIcons: [String: String] = [
+        "Personal" : "person.circle",
+        "Work" : "briefcase",
+        "Important" : "exclamationmark.triangle"
+    ]
+    
+    @State var selectedOption: String = "Personal"
     
     
     var finishedItems: [ItemModel] {
@@ -28,7 +42,12 @@ struct ListView: View {
             
             VStack(spacing: 12) {
                 
-                AddView()
+                Button("Add Item") {
+                    showAddSheet = true
+                }
+                .frame(maxWidth: .infinity)
+                .buttonStyle(.borderedProminent)
+                
                 
                 if listViewModel.items.isEmpty {
                     NoItemsView()
@@ -101,7 +120,7 @@ struct ListView: View {
                 Spacer()
             }
             .frame(maxWidth: 600)
-            .navigationTitle("To Do List 📝")
+            .navigationTitle("Swiftly List")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     EditButton()
@@ -115,6 +134,53 @@ struct ListView: View {
                     }
                 }
             }
+            .sheet(isPresented: $showAddSheet) {
+                NavigationView {
+                    Form {
+                        TextField("Enter the task", text: $textFieldText)
+                            .textFieldStyle(.roundedBorder)
+                            .submitLabel(.done)
+                        Picker("Item Type", selection: $selectedOption) {
+                            ForEach(filterOptions, id: \.self) { option in
+                                HStack {
+                                    Text("\(option)")
+                                    Image(systemName: filterOptionIcons[option] ?? "person.circl")
+                                }
+                                .tint(.blue)
+                                .tag(option)
+                            }
+                        }
+                    }
+                    .navigationTitle("Add Task")
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Cancel") {
+                                showAddSheet = false
+                            }
+                        }
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Save") {
+                                print("Save button press")
+                                print("Text field: \(textFieldText)")
+                                if textFieldText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                    showEmptyAlert = true
+                                    return
+                                }
+                                listViewModel.addItem(title: textFieldText)
+                                showAddSheet = false
+                                textFieldText = ""
+                                hideKeyboard()
+                            }
+                        }
+                    }
+                    .alert("Please fill the text field", isPresented: $showEmptyAlert) {
+                        Button("OK", role: .cancel) {}
+                    }
+                }
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+            }
+            
             .sheet(isPresented: $showEditSheet) {
                 NavigationView {
                     Form {

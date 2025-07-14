@@ -11,34 +11,14 @@ struct AddView: View {
     
     @EnvironmentObject var listViewModel: ListViewModel
     
-    @State var textFieldText: String = ""
-    @State var showEmptyTextAlert: Bool = false
+    
     
     var body: some View {
-        HStack {
-            TextField("Enter the task", text: $textFieldText)
-                .textFieldStyle(.roundedBorder)
-                .submitLabel(.done)
+        
             
-            Button(action: {
-                if textFieldText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    showEmptyTextAlert = true
-                    return
-                }
-                listViewModel.addItem(title: textFieldText)
-                textFieldText = ""
-                hideKeyboard()
-            }) {
-                Text("Save")
-                    .bold()
-                    .padding(.horizontal, 16)
-            }
-            .buttonStyle(.borderedProminent)
-        }
-        .padding(.horizontal)
-        .alert("Please fill the text field", isPresented: $showEmptyTextAlert) {
-            Button("OK", role: .cancel) {}
-        }
+        
+        
+        
         
     }
 }
@@ -48,3 +28,18 @@ struct AddView: View {
         AddView()
     }
 }
+
+//            Button(action: {
+//                if textFieldText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+//                    showEmptyTextAlert = true
+//                    return
+//                }
+//                listViewModel.addItem(title: textFieldText)
+//                textFieldText = ""
+//                hideKeyboard()
+//            }) {
+//                Text("Save")
+//                    .bold()
+//                    .padding(.horizontal, 16)
+//            }
+//            .buttonStyle(.borderedProminent)

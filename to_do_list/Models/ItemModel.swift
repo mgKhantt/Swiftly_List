@@ -11,6 +11,7 @@ struct ItemModel: Identifiable, Codable {
     let id: String
     var title: String
     let isCompleted: Bool
+
     
     init(id: String = UUID().uuidString, title: String, isCompleted: Bool) {
         self.id = id
