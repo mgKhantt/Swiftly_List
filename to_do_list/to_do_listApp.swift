@@ -9,10 +9,10 @@ import SwiftUI
 
 @main
 struct to_do_listApp: App {
-
+    
     @StateObject var listViewModel: ListViewModel = ListViewModel()
     @State private var showAddSheet: Bool = false
-
+    
     var body: some Scene {
         WindowGroup {
             ZStack {
@@ -25,27 +25,30 @@ struct to_do_listApp: App {
                         Image(systemName: "house")
                         Text("Home")
                     }
-
+                    
                     Text("Upcoming")
                         .tabItem {
                             Image(systemName: "calendar")
                             Text("Upcoming")
                         }
-
+                    
                     Text("Inbox")
                         .tabItem {
                             Image(systemName: "bubble.left")
                             Text("Inbox")
                         }
-
-                    Text("Settings")
-                        .tabItem {
-                            Image(systemName: "gearshape")
-                            Text("Settings")
-                        }
+                    
+                    
+                    NavigationStack {
+                        SettingView()
+                    }
+                    .tabItem {
+                        Image(systemName: "gearshape")
+                        Text("Settings")
+                    }
                 }
                 .environmentObject(listViewModel)
-
+                
                 VStack {
                     Spacer()
                     HStack {

@@ -117,10 +117,10 @@ struct ListView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 16))
                     .padding(.horizontal)
                 }
-                
-                Spacer()
+                Spacer(minLength: 38)
             }
             .frame(maxWidth: 600)
+        
             .navigationTitle("Swiftly List")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
