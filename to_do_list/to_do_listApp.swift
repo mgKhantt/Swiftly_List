@@ -11,6 +11,8 @@ import SwiftUI
 struct to_do_listApp: App {
     
     @StateObject var listViewModel: ListViewModel = ListViewModel()
+    @StateObject var profileViewModel: ProfileViewModel = ProfileViewModel()
+    
     @State private var showAddSheet: Bool = false
     
     var body: some Scene {
@@ -26,19 +28,6 @@ struct to_do_listApp: App {
                         Text("Home")
                     }
                     
-                    Text("Upcoming")
-                        .tabItem {
-                            Image(systemName: "calendar")
-                            Text("Upcoming")
-                        }
-                    
-                    Text("Inbox")
-                        .tabItem {
-                            Image(systemName: "bubble.left")
-                            Text("Inbox")
-                        }
-                    
-                    
                     NavigationStack {
                         SettingView()
                     }
@@ -48,6 +37,7 @@ struct to_do_listApp: App {
                     }
                 }
                 .environmentObject(listViewModel)
+                .environmentObject(profileViewModel)
                 
                 VStack {
                     Spacer()

@@ -9,6 +9,8 @@ import SwiftUI
 
 struct SettingView: View {
     
+    @EnvironmentObject var profileViewModel: ProfileViewModel
+    
     @Environment(\.colorScheme) var colorScheme
     
     @State var isAcitveTouchID: Bool = false
@@ -16,18 +18,26 @@ struct SettingView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                NavigationLink(destination: TestView()) {
+                NavigationLink(destination: ProfileView()) {
                     HStack {
-                        Image(systemName: "person.circle")
-                            .resizable()
-                            .scaledToFit()
-                            .frame(width: 60, height: 60)
-                            .foregroundStyle(Color.primary)
-                            .background(Color.yellow.opacity(0.2))
-                            .clipShape(Circle())
+                        if let image = profileViewModel.profileImage {
+                            Image(uiImage: image)
+                                .resizable()
+                                .scaledToFill()
+                                .frame(width: 60, height: 60)
+                                .clipShape(Circle())
+                                .overlay(Circle().stroke(Color.white, lineWidth: 3))
+                                .shadow(radius: 4)
+                        } else {
+                            Image(systemName: "person.crop.circle.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 60, height: 60)
+                                .foregroundColor(.white.opacity(0.9))
+                        }
                         
                         VStack(alignment: .leading) {
-                            Text("Khant Phone Naing")
+                            Text("\(profileViewModel.name)")
                                 .font(.headline)
                                 .fontWeight(.medium)
                             Text("View Profile")
@@ -241,13 +251,16 @@ struct SettingView: View {
             }
             .padding(.top, 8)
         }
+        .scrollIndicators(.hidden)
         .navigationTitle("Settings")
     }
     
 }
 
 #Preview {
-    SettingView()
+    NavigationStack{
+        SettingView()
+    }
 }
 
 
